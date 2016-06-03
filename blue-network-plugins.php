@@ -227,9 +227,9 @@ class Network_Plugins_List_Table extends WP_Plugins_List_Table {
 	 * Overrides {@link WP_Plugins_List_Table::prepare_items()}
 	 */
 	function prepare_items() {
-		global $page, $orderby, $order;
+		global $status, $page, $orderby, $order, $s;
 
-		wp_reset_vars( array( 'orderby', 'order', 's' ) );
+		wp_reset_vars( array( 'orderby', 'order' ) );
 
 		$plugins = array(
 			'all' => ray_get_network_plugins_only(),
@@ -242,28 +242,36 @@ class Network_Plugins_List_Table extends WP_Plugins_List_Table {
 			'dropins' => array()
 		);
 
-		$screen = get_current_screen();
+		$screen = $this->screen;
 
-		if ( ! is_multisite() || ( $screen->is_network && current_user_can('manage_network_plugins') ) ) {
-			$current = get_site_transient( 'update_plugins' );
-			foreach ( (array) $plugins['all'] as $plugin_file => $plugin_data ) {
-				if ( isset( $current->response[ $plugin_file ] ) )
-					$plugins['upgrade'][ $plugin_file ] = $plugin_data;
+		if ( ! is_multisite() || ( $screen->in_admin( 'network' ) && current_user_can( 'manage_network_plugins' ) ) ) {
+			if ( current_user_can( 'update_plugins' ) ) {
+				$current = get_site_transient( 'update_plugins' );
+				foreach ( (array) $plugins['all'] as $plugin_file => $plugin_data ) {
+					if ( isset( $current->response[ $plugin_file ] ) ) {
+						$plugins['all'][ $plugin_file ]['update'] = true;
+						$plugins['upgrade'][ $plugin_file ] = $plugins['all'][ $plugin_file ];
+					}
+				}
 			}
 		}
 
-		set_transient( 'plugin_slugs', array_keys( $plugins['all'] ), 86400 );
+		set_transient( 'plugin_slugs', array_keys( $plugins['all'] ), DAY_IN_SECONDS );
 
-		$recently_activated = get_option( 'recently_activated', array() );
+		$recently_activated = get_site_option( 'recently_activated', array() );
 
-		$one_week = 7*24*60*60;
-		foreach ( $recently_activated as $key => $time )
-			if ( $time + $one_week < time() )
+		foreach ( $recently_activated as $key => $time ) {
+			if ( $time + WEEK_IN_SECONDS < time() ) {
 				unset( $recently_activated[$key] );
-		update_option( 'recently_activated', $recently_activated );
+			}
+		}
 
-		if ( !current_user_can( 'update_plugins' ) )
-			$plugins['upgrade'] = array();
+		update_site_option( 'recently_activated', $recently_activated );
+
+		if ( strlen( $s ) ) {
+			$status = 'search';
+			$plugins['search'] = array_filter( $plugins['all'], array( $this, '_search_callback' ) );
+		}
 
 		$totals = array();
 		foreach ( $plugins as $type => $list )
@@ -280,12 +288,15 @@ class Network_Plugins_List_Table extends WP_Plugins_List_Table {
 
 		$total_this_page = $totals[ $status ];
 
-		if ( $orderby ) {
+		if ( ! $orderby ) {
+			$orderby = 'Name';
+		} else {
 			$orderby = ucfirst( $orderby );
-			$order = strtoupper( $order );
-
-			uasort( $this->items, array( &$this, '_order_callback' ) );
 		}
+
+		$order = strtoupper( $order );
+
+		uasort( $this->items, array( $this, '_order_callback' ) );
 	}
 
 	/**
