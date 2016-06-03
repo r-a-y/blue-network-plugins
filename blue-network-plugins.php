@@ -70,7 +70,8 @@ class Blue_Network_Plugins {
 		$all_plugins = get_plugins();
 
 		$network_plugins = ray_get_network_plugins_only();
-		return array_diff_assoc( $all_plugins, $network_plugins );
+
+		return array_diff_key( $all_plugins, $network_plugins );
 	}
 
 	/**
