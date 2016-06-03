@@ -285,18 +285,6 @@ class Network_Plugins_List_Table extends WP_Plugins_List_Table {
 
 			uasort( $this->items, array( &$this, '_order_callback' ) );
 		}
-
-		$plugins_per_page = $this->get_items_per_page( str_replace( '-', '_', $screen->id . '_per_page' ) );
-
-		$start = ( $page - 1 ) * $plugins_per_page;
-
-		if ( $total_this_page > $plugins_per_page )
-			$this->items = array_slice( $this->items, $start, $plugins_per_page );
-
-		$this->set_pagination_args( array(
-			'total_items' => $total_this_page,
-			'per_page' => $plugins_per_page,
-		) );
 	}
 
 	/**
