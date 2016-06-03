@@ -303,7 +303,7 @@ class Network_Plugins_List_Table extends WP_Plugins_List_Table {
 	 * Overrides {@link WP_Plugins_List_Table::bulk_actions()}
 	 * to return nothing since this isn't applicable for our needs
 	 */
-	function bulk_actions() {
+	function bulk_actions( $which = '' ) {
 		return;
 	}
 
