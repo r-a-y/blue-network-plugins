@@ -50,6 +50,9 @@ class Blue_Network_Plugins {
 		// add extra action links for our plugin
 		add_filter( 'network_admin_plugin_action_links',array( &$this, 'add_plugin_action_links' ), 10, 2 );
 
+		// do not display network plugins alongside site plugins in sub-site admin
+		add_filter( 'show_network_active_plugins', '__return_false' );
+
 		/* actions **************************************************************/
 
 		// localization
